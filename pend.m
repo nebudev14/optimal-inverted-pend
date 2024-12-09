@@ -3,7 +3,7 @@ clear;
 addpath('~/packages/casadi-matlab/')
 import casadi.*
 
-N = 20; % number of interior points
+N = 80; % number of interior points
 opti = casadi.Opti();
 
 g = 10; % gravity
@@ -41,10 +41,8 @@ opti.subject_to(theta(1) == 0);
 opti.subject_to(theta_dot(1) == 0);
 opti.subject_to(theta(N+1) == pi);
 opti.subject_to(U(1) == 0);
-% 
-% opti.subject_to(T>=0);
 
-opti.set_initial(theta_dot, 2);
+opti.set_initial(theta_dot, 1);
 opti.set_initial(U, 1);
 
 opti.solver('ipopt'); % set numerical backend
@@ -56,14 +54,14 @@ figure;
 subplot(3,1,1);
 plot(t_grid, sol.value(theta), '-o');
 xlabel('Time [s]'); ylabel('\theta [rad]');
-title('Optimal Angle Trajectory');
+title('Theta');
 
 subplot(3,1,2);
 plot(t_grid, sol.value(theta_dot), '-o');
 xlabel('Time [s]'); ylabel('d\theta/dt [rad/s]');
-title('Optimal Angular Velocity Trajectory');
+title('Angular Velocity');
 
 subplot(3,1,3);
 plot(linspace(0,T,N), sol.value(U), '-o');
 xlabel('Time [s]'); ylabel('u [N*m]');
-title('Optimal Control Input');
+title('Control Input');
