@@ -1,0 +1,52 @@
+clc;
+clear;
+addpath('~/packages/casadi-matlab/')
+import casadi.*
+
+N = 15; % number of interior points
+opti = casadi.Opti();
+
+g = 10; % gravity
+l = 4; % meters
+m = 2; % kg
+
+X = opti.variable(2, N+1); % State space trajectory
+theta = X(1, :);
+theta_dot = X(2, :);
+U = opti.variable(1, N); % control inputs
+T = opti.variable(); % time
+J = opti.variable;
+for k=1:N
+    J = J + U(k)^2;
+end
+
+opti.minimize(J);
+
+f = @(x, u) [x(2); ((g/l)*sin(x(1))) + (u/(m*l^2))]; % dynamics of system
+dt = T/N;
+% multiple shooting via RK4
+for k=1:N
+   k1 = f(X(:,k),         U(:,k));
+   k2 = f(X(:,k)+dt/2*k1, U(:,k));
+   k3 = f(X(:,k)+dt/2*k2, U(:,k));
+   k4 = f(X(:,k)+dt*k3,   U(:,k));
+   x_next = X(:,k) + dt/6*(k1+2*k2+2*k3+k4);
+   opti.subject_to(X(:,k+1)==x_next); % close the gaps
+end
+
+% set some arbitrary control constraint
+% opti.subject_to(0 <= U <= 2);
+
+opti.subject_to(theta(1) == 0);
+opti.subject_to(theta_dot(1) == 0);
+opti.subject_to(theta(N+1) == pi);
+
+opti.subject_to(T>=0);
+
+opti.set_initial(theta_dot, 2);
+opti.set_initial(U, 1);
+
+opti.solver('ipopt'); % set numerical backend
+sol = opti.solve();   % actual solve
+
+plot(sol.value(theta));
